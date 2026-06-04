@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>中垂线找错 · Perpendicular Bisector Error Hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  },
+  options: { renderActions: { addMenu: [] } }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+  :root {
+    --paper: #f3ede0;
+    --paper-deep: #e9e2d1;
+    --ink: #142038;
+    --ink-soft: #485775;
+    --navy: #1a2942;
+    --amber: #c2670a;
+    --amber-soft: #f3d8a8;
+    --emerald: #056b4d;
+    --emerald-soft: #c3e3d4;
+    --peach: #e98b66;
+    --peach-soft: #fbdac9;
+    --rose: #b53d36;
+    --rose-soft: #f5c9c5;
+    --card: #fbf6e9;
+    --card-warm: #f7e7c2;
+    --shadow: 4px 4px 0 var(--ink);
+    --shadow-sm: 2px 2px 0 var(--ink);
+    --shadow-lg: 6px 6px 0 var(--ink);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { margin: 0; padding: 0; overscroll-behavior-y: contain; }
+
+  body {
+    font-family: 'Figtree', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 12px 12px 100px;
+    line-height: 1.5;
+    background-image:
+      radial-gradient(circle at 8% 20%, rgba(194, 103, 10, 0.07) 0%, transparent 40%),
+      radial-gradient(circle at 92% 80%, rgba(5, 107, 77, 0.06) 0%, transparent 45%),
+      radial-gradient(circle at 50% 50%, rgba(233, 139, 102, 0.04) 0%, transparent 60%);
+    background-attachment: fixed;
+  }
+
+  /* ───── Header ───── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 14px;
+    padding: 4px 2px;
+  }
+  .title {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .title .accent { color: var(--amber); font-style: normal; font-weight: 700; }
+  .scoreboard {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: right;
+    line-height: 1.3;
+  }
+  .scoreboard .big {
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .scoreboard .streak {
+    color: var(--emerald);
+    font-weight: 600;
+  }
+
+  /* ───── Problem statement card ───── */
+  .problem-card {
+    background: var(--card-warm);
+    border: 2.5px solid var(--ink);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    position: relative;
+  }
+  .problem-card::before {
+    content: "题目";
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    letter-spacing: 0.08em;
+  }
+  .problem-text {
+    font-size: 14px;
+    color: var(--ink);
+    margin-top: 4px;
+  }
+  .problem-text .points {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    color: var(--amber);
+  }
+
+  /* ───── Instructions ───── */
+  .instructions {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    padding: 0 4px;
+    font-style: italic;
+    font-family: 'Newsreader', serif;
+  }
+  .instructions .key {
+    color: var(--rose);
+    font-style: normal;
+    font-weight: 600;
+    font-family: 'Figtree', sans-serif;
+  }
+
+  /* ───── Step cards ───── */
+  .steps { margin-bottom: 12px; }
+  .step-card {
+    background: var(--card);
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow-sm);
+    padding: 12px 14px 14px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .step-card:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+  .step-card.selected {
+    background: var(--ink);
+    color: var(--paper);
+    box-shadow: var(--shadow);
+    transform: translate(-1px, -1px);
+  }
+  .step-card.selected .step-num {
+    color: var(--peach);
+  }
+  .step-card.selected .step-label {
+    color: var(--paper-deep);
+  }
+  .step-card.locked {
+    pointer-events: none;
+  }
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .step-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--amber);
+    background: var(--paper);
+    padding: 2px 7px;
+    border: 1.5px solid var(--ink);
+    line-height: 1.2;
+  }
+  .step-card.selected .step-num {
+    background: var(--ink);
+    color: var(--peach);
+  }
+  .step-label {
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    flex: 1;
+  }
+  .step-body {
+    font-size: 15px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 0;
+    min-height: 28px;
+  }
+  .step-body mjx-container { font-size: 110% !important; }
+
+  /* Reveal states */
+  .step-card.reveal-error {
+    background: var(--rose-soft);
+    border-color: var(--rose);
+    box-shadow: 3px 3px 0 var(--rose);
+    color: var(--ink);
+    transform: none;
+  }
+  .step-card.reveal-correct-pick {
+    background: var(--emerald-soft);
+    border-color: var(--emerald);
+    box-shadow: 3px 3px 0 var(--emerald);
+    color: var(--ink);
+    transform: none;
+  }
+  .step-card.reveal-wrong-pick {
+    background: var(--paper-deep);
+    border-color: var(--ink-soft);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink);
+    opacity: 0.92;
+    transform: none;
+  }
+  .step-card .marker {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border: 1.5px solid;
+    letter-spacing: 0.05em;
+  }
+  .marker.err { color: var(--rose); border-color: var(--rose); background: #fff; }
+  .marker.your { color: var(--ink-soft); border-color: var(--ink-soft); background: #fff; }
+  .corrected {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--paper);
+    border-left: 3px solid var(--emerald);
+    font-size: 14px;
+  }
+  .corrected .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--emerald);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ───── Feedback panel (hint + reveal) ───── */
+  .feedback-panel {
+    background: var(--card);
+    border: 2.5px solid var(--ink);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+    position: relative;
+  }
+  .feedback-panel.hint {
+    background: var(--amber-soft);
+    border-color: var(--amber);
+    box-shadow: 4px 4px 0 var(--amber);
+  }
+  .feedback-panel.reveal-correct {
+    background: var(--emerald-soft);
+    border-color: var(--emerald);
+    box-shadow: 4px 4px 0 var(--emerald);
+  }
+  .feedback-panel.reveal-wrong {
+    background: var(--peach-soft);
+    border-color: var(--rose);
+    box-shadow: 4px 4px 0 var(--rose);
+  }
+  .feedback-panel .fb-tag {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    letter-spacing: 0.08em;
+  }
+  .feedback-panel.hint .fb-tag { background: var(--amber); }
+  .feedback-panel.reveal-correct .fb-tag { background: var(--emerald); }
+  .feedback-panel.reveal-wrong .fb-tag { background: var(--rose); }
+  .fb-title {
+    font-family: 'Newsreader', serif;
+    font-weight: 600;
+    font-size: 17px;
+    margin-top: 4px;
+    margin-bottom: 6px;
+  }
+  .fb-body { font-size: 13.5px; color: var(--ink); }
+  .fb-body strong { color: var(--ink); font-weight: 700; }
+  .fb-body .type-tag {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    margin: 0 2px;
+    letter-spacing: 0.03em;
+  }
+
+  /* ───── Action buttons ───── */
+  .actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px;
+    background: linear-gradient(to bottom, transparent 0%, var(--paper) 30%, var(--paper) 100%);
+    display: flex;
+    gap: 8px;
+    z-index: 50;
+  }
+  .btn {
+    flex: 1;
+    background: var(--card);
+    border: 2.5px solid var(--ink);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    font-family: 'Figtree', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 13px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    letter-spacing: 0.02em;
+  }
+  .btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn.primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .btn.primary:disabled {
+    background: var(--paper-deep);
+    color: var(--ink-soft);
+    box-shadow: var(--shadow-sm);
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn.accent {
+    background: var(--amber);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .btn.success {
+    background: var(--emerald);
+    color: var(--paper);
+  }
+  .btn.ghost {
+    background: transparent;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ───── Empty card spacing ───── */
+  .step-card .step-body p { margin: 0; }
+
+  /* tiny utility */
+  .hide { display: none !important; }
+
+  /* ───── End-of-round summary ───── */
+  .summary-strip {
+    background: var(--card);
+    border: 2px dashed var(--ink-soft);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: center;
+  }
+  .summary-strip .num { color: var(--ink); font-weight: 600; }
+
+  /* ───── Hint pulse ───── */
+  @keyframes nudge {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  .pulse { animation: nudge 1.4s ease-in-out infinite; }
+
+  /* Slim phone optimizations */
+  @media (max-width: 360px) {
+    .title { font-size: 19px; }
+    .step-body { font-size: 14px; }
+    .btn { font-size: 14px; padding: 12px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title"><span class="accent">中垂线</span> · 找错</div>
+  <div class="scoreboard">
+    <div><span class="big" id="scoreCorrect">0</span> / <span class="big" id="scoreTotal">0</span></div>
+    <div>连对 <span class="streak" id="scoreStreak">0</span></div>
+  </div>
+</div>
+
+<div class="problem-card">
+  <div class="problem-text" id="problemText"></div>
+</div>
+
+<div class="instructions">
+  下面是某同学的解题过程。<span class="key">找出第一个出错的步骤</span>——点击那一步，再点确认。
+</div>
+
+<div class="steps" id="stepsContainer"></div>
+
+<div id="feedbackArea"></div>
+
+<div class="actions">
+  <button class="btn primary" id="actionBtn" disabled>请先选择一步</button>
+</div>
+
+<script>
+"use strict";
+
+/* ════════════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════════════ */
+
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const gcd = (a, b) => b === 0 ? Math.abs(a) : gcd(b, a % b);
+
+/** Format a signed number with parens if negative, for substitution display */
+function paren(n) {
+  return n < 0 ? `(${n})` : `${n}`;
+}
+
+/** Format a fraction num/den as LaTeX, simplified, with sign normalized to numerator */
+function fracTex(num, den) {
+  if (den === 0) return "\\text{undef}";
+  if (num === 0) return "0";
+  let sign = 1;
+  if (den < 0) { num = -num; den = -den; }
+  if (num < 0) { sign = -1; num = -num; }
+  const g = gcd(num, den);
+  num /= g; den /= g;
+  const body = den === 1 ? `${num}` : `\\dfrac{${num}}{${den}}`;
+  return sign < 0 ? `-${body}` : body;
+}
+
+/** Format a half-integer (sum/2) cleanly */
+function halfTex(sum) {
+  if (sum % 2 === 0) return `${sum / 2}`;
+  return fracTex(sum, 2);
+}
+
+/** Get the value of a half-integer for downstream display in equations */
+function halfVal(sum) { return sum / 2; }
+
+/** Format a value (possibly fraction) for use inside parens like (x - $val$) */
+function valTex(v) {
+  if (Number.isInteger(v)) return `${v}`;
+  // Express as fraction num/2 (used for half-integer midpoints)
+  const num = Math.round(v * 2);
+  return fracTex(num, 2);
+}
+
+/** Express (x - x0) with proper sign handling for display:
+ *  if x0 < 0 (integer or half), write (x + |x0|);
+ *  if x0 = 0, write x;
+ *  else (x - x0).
+ *  Returns a TeX string.
+ */
+function linTermTex(varName, x0) {
+  if (x0 === 0) return varName;
+  if (x0 > 0) return `\\left(${varName} - ${valTex(x0)}\\right)`;
+  // x0 < 0
+  return `\\left(${varName} + ${valTex(-x0)}\\right)`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PROBLEM GENERATION
+═══════════════════════════════════════════════════════════════════ */
+
+function generatePoints() {
+  for (let i = 0; i < 200; i++) {
+    const x1 = randInt(-8, 8);
+    const y1 = randInt(-8, 8);
+    let x2 = randInt(-8, 8);
+    let y2 = randInt(-8, 8);
+    if (x1 === x2 || y1 === y2) continue;            // skip vert/horiz slopes
+    const dx = x2 - x1, dy = y2 - y1;
+    // avoid trivial slope ±1 cases more than half the time
+    if (Math.abs(dx) === Math.abs(dy) && Math.random() < 0.6) continue;
+    // skip cases where both midpoint coords are 0 (too clean)
+    if (x1 + x2 === 0 && y1 + y2 === 0) continue;
+    // require at least one negative coord for richer error options
+    if (x1 >= 0 && x2 >= 0 && y1 >= 0 && y2 >= 0 && Math.random() < 0.8) continue;
+    return [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+  }
+  return [{ x: -3, y: 4 }, { x: 5, y: -2 }];
+}
+
+/* Error type definitions */
+const ERROR_TYPES = {
+  paren: {
+    label: "代入漏括号 · 符号丢失",
+    hint: "代入数值时漏掉了括号。负数代进去如果不加括号，符号会变错。",
+    tip: "永远把代入的数字用括号括起来：$y_2 - (y_1) = ${B.y} - (${A.y})$。"
+  },
+  midFormula: {
+    label: "中点公式记错",
+    hint: "中点公式记错了。中点是两端的<strong>平均</strong>，用加号不是减号。",
+    tip: "$M = \\left(\\dfrac{x_A + x_B}{2}, \\dfrac{y_A + y_B}{2}\\right)$"
+  },
+  midArith: {
+    label: "中点算术错误",
+    hint: "中点的<strong>算术</strong>错了——代入公式对，但加完算错了。",
+    tip: "慢慢算：负数相加要特别小心。$-3 + (-5) = -8$，不是 $-2$。"
+  },
+  slopeArith: {
+    label: "斜率算术错误",
+    hint: "斜率的<strong>算术</strong>错了——分子或分母减出来不对。",
+    tip: "减负数等于加正数：$3 - (-5) = 3 + 5 = 8$。"
+  },
+  perpNoNeg: {
+    label: "垂直斜率忘记负号",
+    hint: "垂直斜率不是简单取倒数——还要变号。$m_1 \\cdot m_2 = -1$。",
+    tip: "如果 $m_{AB} = \\dfrac{a}{b}$，那么 $m_\\perp = -\\dfrac{b}{a}$。"
+  },
+  pointSub: {
+    label: "代入点时符号错",
+    hint: "直线方程 $y - y_0 = m(x - x_0)$ 里，代入<strong>负</strong>坐标时减号要变成加号。",
+    tip: "若 $x_0 = -2$，则 $(x - x_0) = (x - (-2)) = (x + 2)$。"
+  }
+};
+
+/** Build a step-6 (line equation) in TeX given a midpoint and perp slope as fraction */
+function buildStep6Tex(mx, my, perp_num, perp_den) {
+  const perpTex = fracTex(perp_num, perp_den);
+  let lhs;
+  if (my === 0) lhs = "y";
+  else if (my > 0) lhs = `y - ${valTex(my)}`;
+  else lhs = `y + ${valTex(-my)}`;
+  let rhs;
+  if (mx === 0) rhs = `${perpTex} \\cdot x`;
+  else if (mx > 0) rhs = `${perpTex} \\cdot \\left(x - ${valTex(mx)}\\right)`;
+  else rhs = `${perpTex} \\cdot \\left(x + ${valTex(-mx)}\\right)`;
+  return `${lhs} = ${rhs}`;
+}
+
+/** Build the correct step strings */
+function buildCorrectSteps(A, B) {
+  const Mx_sum = A.x + B.x;
+  const My_sum = A.y + B.y;
+  const Mx = Mx_sum / 2;
+  const My = My_sum / 2;
+  const dx = B.x - A.x;
+  const dy = B.y - A.y;
+  // perp slope = -dx/dy
+  const perpTex = fracTex(-dx, dy);
+
+  return {
+    Mx, My, dx, dy,
+    s1: `M = \\left(\\dfrac{x_A + x_B}{2},\\ \\dfrac{y_A + y_B}{2}\\right)`,
+    s2: `M = \\left(\\dfrac{${paren(A.x)} + ${paren(B.x)}}{2},\\ \\dfrac{${paren(A.y)} + ${paren(B.y)}}{2}\\right)`,
+    s3: `M = \\left(${halfTex(Mx_sum)},\\ ${halfTex(My_sum)}\\right)`,
+    s4: `m_{AB} = \\dfrac{y_B - y_A}{x_B - x_A} = \\dfrac{${paren(B.y)} - ${paren(A.y)}}{${paren(B.x)} - ${paren(A.x)}} = ${fracTex(dy, dx)}`,
+    s5: `m_\\perp = -\\dfrac{1}{m_{AB}} = ${perpTex}`,
+    s6: buildStep6Tex(Mx, My, -dx, dy)
+  };
+}
+
+/** Build a problem with one error injected at one step */
+function buildProblem() {
+  const [A, B] = generatePoints();
+  const Mx_sum = A.x + B.x, My_sum = A.y + B.y;
+  const Mx = Mx_sum / 2, My = My_sum / 2;
+  const dx = B.x - A.x, dy = B.y - A.y;
+  const perpTex = fracTex(-dx, dy);
+
+  // Determine feasible error injections
+  const feasible = [];
+
+  // paren omission at step 2 (need negative coord)
+  if (A.x < 0 || B.x < 0 || A.y < 0 || B.y < 0) feasible.push("paren_step2");
+  // paren omission at step 4 (need negative coord)
+  if (A.x < 0 || B.x < 0 || A.y < 0 || B.y < 0) feasible.push("paren_step4");
+  // midpoint formula error at step 1
+  feasible.push("midFormula_step1");
+  // midpoint arithmetic at step 3
+  feasible.push("midArith_step3");
+  // slope arithmetic at step 4
+  feasible.push("slopeArith_step4");
+  // perp slope missing negative at step 5
+  feasible.push("perpNoNeg_step5");
+  // point sub sign at step 6 (need negative midpoint coord)
+  if (Mx < 0 || My < 0) feasible.push("pointSub_step6");
+
+  const choice = pick(feasible);
+  const correct = buildCorrectSteps(A, B);
+
+  // Display values (may be corrupted from errorStep onward)
+  let dMx = Mx, dMy = My, dMxSum = Mx_sum, dMySum = My_sum;
+  let d_dx = dx, d_dy = dy;
+  let d_perp_tex = perpTex;
+  let d_perp_num_dx = -dx, d_perp_num_dy = dy; // perp slope = d_perp_num_dx / d_perp_num_dy
+
+  // Build steps array
+  const steps = [];
+  let errorStep = 0;
+  let errorType = "";
+
+  // STEP 1
+  steps.push({
+    label: "中点公式",
+    tex: correct.s1
+  });
+  // STEP 2
+  steps.push({
+    label: "代入坐标",
+    tex: correct.s2
+  });
+  // STEP 3
+  steps.push({
+    label: "化简中点",
+    tex: correct.s3
+  });
+  // STEP 4
+  steps.push({
+    label: "AB 斜率",
+    tex: correct.s4
+  });
+  // STEP 5
+  steps.push({
+    label: "垂直斜率",
+    tex: correct.s5
+  });
+  // STEP 6
+  steps.push({
+    label: "中垂线方程",
+    tex: correct.s6
+  });
+
+  // Inject error based on choice
+  switch (choice) {
+    case "paren_step2": {
+      errorStep = 2; errorType = "paren";
+      // Choose which coord to corrupt: pick a random negative one
+      const cands = [];
+      if (A.x < 0) cands.push("Ax");
+      if (B.x < 0) cands.push("Bx");
+      if (A.y < 0) cands.push("Ay");
+      if (B.y < 0) cands.push("By");
+      const which = pick(cands);
+      // Build step 2 with one term written without sign (treated as positive)
+      let ax = A.x, ay = A.y, bx = B.x, by = B.y;
+      if (which === "Ax") ax = Math.abs(A.x);
+      if (which === "Bx") bx = Math.abs(B.x);
+      if (which === "Ay") ay = Math.abs(A.y);
+      if (which === "By") by = Math.abs(B.y);
+      // Display step 2 with paren() — corrupted term is now positive so no parens; others keep them
+      steps[1].tex = `M = \\left(\\dfrac{${paren(ax)} + ${paren(bx)}}{2},\\ \\dfrac{${paren(ay)} + ${paren(by)}}{2}\\right)`;
+      // Recompute downstream
+      dMxSum = ax + bx; dMySum = ay + by;
+      dMx = dMxSum / 2; dMy = dMySum / 2;
+      // Step 3 follows from wrong values
+      steps[2].tex = `M = \\left(${halfTex(dMxSum)},\\ ${halfTex(dMySum)}\\right)`;
+      // Steps 4-5 unaffected (use original A, B)
+      // Step 6 uses wrong midpoint
+      steps[5].tex = buildStep6Tex(dMx, dMy, d_perp_num_dx, d_perp_num_dy);
+      break;
+    }
+    case "paren_step4": {
+      errorStep = 4; errorType = "paren";
+      const cands = [];
+      if (A.x < 0) cands.push("Ax");
+      if (B.x < 0) cands.push("Bx");
+      if (A.y < 0) cands.push("Ay");
+      if (B.y < 0) cands.push("By");
+      const which = pick(cands);
+      let ax = A.x, ay = A.y, bx = B.x, by = B.y;
+      if (which === "Ax") ax = Math.abs(A.x);
+      if (which === "Bx") bx = Math.abs(B.x);
+      if (which === "Ay") ay = Math.abs(A.y);
+      if (which === "By") by = Math.abs(B.y);
+      // Build wrong step 4
+      const wrong_dy = by - ay;
+      const wrong_dx = bx - ax;
+      if (wrong_dx === 0) {
+        return buildProblemRetry();
+      }
+      steps[3].tex = `m_{AB} = \\dfrac{y_B - y_A}{x_B - x_A} = \\dfrac{${paren(by)} - ${paren(ay)}}{${paren(bx)} - ${paren(ax)}} = ${fracTex(wrong_dy, wrong_dx)}`;
+      d_dy = wrong_dy; d_dx = wrong_dx;
+      d_perp_num_dx = -d_dx; d_perp_num_dy = d_dy;
+      d_perp_tex = fracTex(d_perp_num_dx, d_perp_num_dy);
+      // Step 5 follows from wrong slope
+      if (d_dy === 0) {
+        return buildProblemRetry();
+      }
+      steps[4].tex = `m_\\perp = -\\dfrac{1}{m_{AB}} = ${d_perp_tex}`;
+      // Step 6 uses wrong perp slope (midpoint still right)
+      steps[5].tex = buildStep6Tex(dMx, dMy, d_perp_num_dx, d_perp_num_dy);
+      break;
+    }
+    case "midFormula_step1": {
+      errorStep = 1; errorType = "midFormula";
+      // Wrong formula (subtraction instead of addition) — pick which coord
+      const both = Math.random() < 0.3;
+      const whichWrong = both ? "both" : pick(["x", "y"]);
+      let wrongFormulaTex;
+      let wrongMxSum = Mx_sum, wrongMySum = My_sum;
+      if (whichWrong === "x" || whichWrong === "both") {
+        wrongMxSum = A.x - B.x;
+      }
+      if (whichWrong === "y" || whichWrong === "both") {
+        wrongMySum = A.y - B.y;
+      }
+      if (whichWrong === "x") {
+        wrongFormulaTex = `M = \\left(\\dfrac{x_A - x_B}{2},\\ \\dfrac{y_A + y_B}{2}\\right)`;
+      } else if (whichWrong === "y") {
+        wrongFormulaTex = `M = \\left(\\dfrac{x_A + x_B}{2},\\ \\dfrac{y_A - y_B}{2}\\right)`;
+      } else {
+        wrongFormulaTex = `M = \\left(\\dfrac{x_A - x_B}{2},\\ \\dfrac{y_A - y_B}{2}\\right)`;
+      }
+      steps[0].tex = wrongFormulaTex;
+      // Step 2: substitute into wrong formula
+      const wrongStep2X = (whichWrong === "x" || whichWrong === "both")
+        ? `${paren(A.x)} - ${paren(B.x)}`
+        : `${paren(A.x)} + ${paren(B.x)}`;
+      const wrongStep2Y = (whichWrong === "y" || whichWrong === "both")
+        ? `${paren(A.y)} - ${paren(B.y)}`
+        : `${paren(A.y)} + ${paren(B.y)}`;
+      steps[1].tex = `M = \\left(\\dfrac{${wrongStep2X}}{2},\\ \\dfrac{${wrongStep2Y}}{2}\\right)`;
+      // Step 3: result from wrong formula
+      dMxSum = wrongMxSum; dMySum = wrongMySum;
+      dMx = dMxSum / 2; dMy = dMySum / 2;
+      steps[2].tex = `M = \\left(${halfTex(dMxSum)},\\ ${halfTex(dMySum)}\\right)`;
+      // Steps 4-5 same. Step 6 uses wrong midpoint.
+      steps[5].tex = buildStep6Tex(dMx, dMy, d_perp_num_dx, d_perp_num_dy);
+      break;
+    }
+    case "midArith_step3": {
+      errorStep = 3; errorType = "midArith";
+      // Generate a plausible arithmetic mistake (typical: sign-flip or off-by-N)
+      // Pick which coordinate to corrupt
+      const whichWrong = pick(["x", "y"]);
+      let wrongMxSum = Mx_sum, wrongMySum = My_sum;
+      if (whichWrong === "x") {
+        wrongMxSum = makePlausibleMistake(Mx_sum, A.x, B.x);
+      } else {
+        wrongMySum = makePlausibleMistake(My_sum, A.y, B.y);
+      }
+      // If mistake produces same value, retry
+      if (wrongMxSum === Mx_sum && wrongMySum === My_sum) {
+        return buildProblemRetry();
+      }
+      steps[2].tex = `M = \\left(${halfTex(wrongMxSum)},\\ ${halfTex(wrongMySum)}\\right)`;
+      dMxSum = wrongMxSum; dMySum = wrongMySum;
+      dMx = dMxSum / 2; dMy = dMySum / 2;
+      // Step 6 uses wrong midpoint
+      steps[5].tex = buildStep6Tex(dMx, dMy, d_perp_num_dx, d_perp_num_dy);
+      break;
+    }
+    case "slopeArith_step4": {
+      errorStep = 4; errorType = "slopeArith";
+      // Plausible: wrong numerator OR denominator, OR sign error after division
+      const wrong_dy_options = [dy + (Math.random() < 0.5 ? 2 : -2), -dy];
+      const wrong_dx_options = [dx + (Math.random() < 0.5 ? 2 : -2), -dx];
+      const which = pick(["num", "den", "sign"]);
+      let wrong_dy = dy, wrong_dx = dx;
+      if (which === "num") wrong_dy = pick(wrong_dy_options);
+      else if (which === "den") wrong_dx = pick(wrong_dx_options);
+      else { // sign error on final fraction
+        wrong_dy = -dy;
+      }
+      if (wrong_dx === 0) wrong_dx = dx; // safety
+      if (fracTex(wrong_dy, wrong_dx) === fracTex(dy, dx)) {
+        return buildProblemRetry();
+      }
+      // Keep substitution display correct, but final simplified value wrong
+      steps[3].tex = `m_{AB} = \\dfrac{y_B - y_A}{x_B - x_A} = \\dfrac{${paren(B.y)} - ${paren(A.y)}}{${paren(B.x)} - ${paren(A.x)}} = ${fracTex(wrong_dy, wrong_dx)}`;
+      d_dy = wrong_dy; d_dx = wrong_dx;
+      d_perp_num_dx = -d_dx; d_perp_num_dy = d_dy;
+      if (d_dy === 0) return buildProblemRetry();
+      d_perp_tex = fracTex(d_perp_num_dx, d_perp_num_dy);
+      // Step 5 follows
+      steps[4].tex = `m_\\perp = -\\dfrac{1}{m_{AB}} = ${d_perp_tex}`;
+      // Step 6 uses wrong perp slope
+      steps[5].tex = buildStep6Tex(dMx, dMy, d_perp_num_dx, d_perp_num_dy);
+      break;
+    }
+    case "perpNoNeg_step5": {
+      errorStep = 5; errorType = "perpNoNeg";
+      // perp slope = dx/dy (no negative)
+      const wrong_num = dx;
+      const wrong_den = dy;
+      if (fracTex(wrong_num, wrong_den) === fracTex(-dx, dy)) {
+        // perpendicular happens to equal itself flipped (i.e., perp = 0 or undef)
+        return buildProblemRetry();
+      }
+      d_perp_num_dx = wrong_num;
+      d_perp_num_dy = wrong_den;
+      d_perp_tex = fracTex(wrong_num, wrong_den);
+      steps[4].tex = `m_\\perp = \\dfrac{1}{m_{AB}} = ${d_perp_tex}`;
+      // Step 6 uses wrong perp slope
+      steps[5].tex = buildStep6Tex(dMx, dMy, d_perp_num_dx, d_perp_num_dy);
+      break;
+    }
+    case "pointSub_step6": {
+      errorStep = 6; errorType = "pointSub";
+      // Sign error: treat negative midpoint coord as positive in the (x - x0) or (y - y0) form
+      const whichWrong = pick(
+        [Mx < 0 ? "x" : null, My < 0 ? "y" : null].filter(Boolean)
+      );
+      let usedMx = Mx, usedMy = My;
+      let lhs, rhs;
+      // Build wrong step 6: flip the sign on the chosen coord
+      if (whichWrong === "x") {
+        // Should be (x + |Mx|) but writes (x - |Mx|)
+        const wrongLinX = `\\left(x - ${valTex(-Mx)}\\right)`;
+        // LHS for y is correct
+        if (My < 0) lhs = `y + ${valTex(-My)}`;
+        else if (My === 0) lhs = "y";
+        else lhs = `y - ${valTex(My)}`;
+        rhs = `${d_perp_tex} \\cdot ${wrongLinX}`;
+      } else {
+        // y side wrong: should be y + |My| but writes y - |My|
+        const lhsWrong = `y - ${valTex(-My)}`;
+        let linX;
+        if (Mx === 0) linX = "x";
+        else if (Mx > 0) linX = `\\left(x - ${valTex(Mx)}\\right)`;
+        else linX = `\\left(x + ${valTex(-Mx)}\\right)`;
+        lhs = lhsWrong;
+        rhs = `${d_perp_tex} \\cdot ${linX}`;
+      }
+      steps[5].tex = `${lhs} = ${rhs}`;
+      break;
+    }
+    default:
+      return buildProblemRetry();
+  }
+
+  return {
+    A, B, steps, errorStep, errorType,
+    Mx, My, dx, dy
+  };
+}
+
+let _retryCount = 0;
+function buildProblemRetry() {
+  _retryCount++;
+  if (_retryCount > 6) {
+    _retryCount = 0;
+    // Hard fallback: simple perp-no-neg with fixed safe points
+    return buildSafeFallback();
+  }
+  return buildProblem();
+}
+
+function buildSafeFallback() {
+  const A = { x: -3, y: 2 }, B = { x: 5, y: -4 };
+  const steps = [
+    { label: "中点公式", tex: `M = \\left(\\dfrac{x_A + x_B}{2},\\ \\dfrac{y_A + y_B}{2}\\right)` },
+    { label: "代入坐标", tex: `M = \\left(\\dfrac{(-3) + 5}{2},\\ \\dfrac{(2) + (-4)}{2}\\right)` },
+    { label: "化简中点", tex: `M = (1,\\ -1)` },
+    { label: "AB 斜率", tex: `m_{AB} = \\dfrac{(-4) - (2)}{(5) - (-3)} = \\dfrac{-6}{8} = -\\dfrac{3}{4}` },
+    { label: "垂直斜率", tex: `m_\\perp = \\dfrac{1}{m_{AB}} = -\\dfrac{4}{3}` },   // ERROR: missing negative
+    { label: "中垂线方程", tex: `y + 1 = -\\dfrac{4}{3} \\left(x - 1\\right)` }
+  ];
+  return { A, B, steps, errorStep: 5, errorType: "perpNoNeg", Mx: 1, My: -1, dx: 8, dy: -6 };
+}
+
+function makePlausibleMistake(sum, a, b) {
+  // Generate a plausible arithmetic mistake for a + b = sum
+  // Common errors: sign flip on one operand, off-by-2
+  const candidates = [];
+  // sign flip on a:
+  candidates.push(-a + b);
+  // sign flip on b:
+  candidates.push(a + -b);
+  // off-by-2:
+  candidates.push(sum + 2);
+  candidates.push(sum - 2);
+  // For "-3 + -5 = -2" style (treating both negatives as if subtracting smaller from larger):
+  candidates.push(Math.abs(a) - Math.abs(b));
+  candidates.push(Math.abs(b) - Math.abs(a));
+  // Filter out equal-to-correct and unreasonably large
+  const filtered = candidates.filter(c => c !== sum && Math.abs(c) <= 30);
+  return filtered.length > 0 ? pick(filtered) : sum + 2;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   GAME STATE & UI
+═══════════════════════════════════════════════════════════════════ */
+
+const state = {
+  problem: null,
+  selectedStep: null,    // 1..6
+  phase: "select",       // 'select' | 'hint' | 'reveal'
+  score: { correct: 0, total: 0, streak: 0 }
+};
+
+const stepsContainer = document.getElementById("stepsContainer");
+const problemText = document.getElementById("problemText");
+const feedbackArea = document.getElementById("feedbackArea");
+const actionBtn = document.getElementById("actionBtn");
+
+function renderProblem() {
+  const p = state.problem;
+  // Render problem header
+  problemText.innerHTML = `求经过 <span class="points">A(${p.A.x},\u00a0${p.A.y})</span> 与 <span class="points">B(${p.B.x},\u00a0${p.B.y})</span> 的线段的中垂线方程。`;
+
+  // Render steps
+  stepsContainer.innerHTML = "";
+  p.steps.forEach((s, i) => {
+    const card = document.createElement("div");
+    card.className = "step-card";
+    card.dataset.step = (i + 1).toString();
+    card.innerHTML = `
+      <div class="step-head">
+        <span class="step-num">${i + 1}</span>
+        <span class="step-label">${s.label}</span>
+      </div>
+      <div class="step-body">$\\displaystyle ${s.tex}$</div>
+    `;
+    card.addEventListener("click", () => onStepTap(i + 1));
+    stepsContainer.appendChild(card);
+  });
+
+  feedbackArea.innerHTML = "";
+  state.selectedStep = null;
+  state.phase = "select";
+  actionBtn.textContent = "请先选择一步";
+  actionBtn.classList.remove("primary", "accent", "success");
+  actionBtn.classList.add("primary");
+  actionBtn.disabled = true;
+
+  typeset();
+}
+
+function onStepTap(stepNum) {
+  if (state.phase !== "select") return;
+  state.selectedStep = stepNum;
+  document.querySelectorAll(".step-card").forEach(c => {
+    c.classList.toggle("selected", parseInt(c.dataset.step, 10) === stepNum);
+  });
+  actionBtn.disabled = false;
+  actionBtn.textContent = `提交 · 第 ${stepNum} 步`;
+}
+
+function showHint() {
+  const p = state.problem;
+  const et = ERROR_TYPES[p.errorType];
+  feedbackArea.innerHTML = `
+    <div class="feedback-panel hint">
+      <span class="fb-tag">提示</span>
+      <div class="fb-title">这道题的错误类型是 <span class="type-tag">${et.label}</span></div>
+      <div class="fb-body">${et.hint}<br><br>看看你的选择是不是这一类型——可以<strong>改选其他步骤</strong>，再点"揭晓答案"。</div>
+    </div>
+  `;
+  state.phase = "hint";
+  // Re-enable step taps so user can change their mind
+  document.querySelectorAll(".step-card").forEach(c => {
+    c.addEventListener("click", () => {
+      if (state.phase === "hint") {
+        const s = parseInt(c.dataset.step, 10);
+        state.selectedStep = s;
+        document.querySelectorAll(".step-card").forEach(cc => {
+          cc.classList.toggle("selected", parseInt(cc.dataset.step, 10) === s);
+        });
+        actionBtn.textContent = `揭晓 · 第 ${s} 步`;
+      }
+    });
+  });
+  actionBtn.textContent = `揭晓 · 第 ${state.selectedStep} 步`;
+  actionBtn.classList.remove("primary");
+  actionBtn.classList.add("accent");
+  typeset();
+}
+
+function showReveal() {
+  const p = state.problem;
+  const et = ERROR_TYPES[p.errorType];
+  const got = state.selectedStep === p.errorStep;
+
+  // Update score
+  state.score.total++;
+  if (got) {
+    state.score.correct++;
+    state.score.streak++;
+  } else {
+    state.score.streak = 0;
+  }
+  updateScoreboard();
+
+  // Mark each step
+  document.querySelectorAll(".step-card").forEach(c => {
+    c.classList.remove("selected");
+    c.classList.add("locked");
+    const s = parseInt(c.dataset.step, 10);
+    // Remove any old marker
+    const oldMark = c.querySelector(".marker");
+    if (oldMark) oldMark.remove();
+    if (s === p.errorStep) {
+      c.classList.add("reveal-error");
+      const mk = document.createElement("div");
+      mk.className = "marker err";
+      mk.textContent = "出错";
+      c.appendChild(mk);
+      // Add corrected version
+      const corr = document.createElement("div");
+      corr.className = "corrected";
+      corr.innerHTML = `<span class="label">正确写法</span>$\\displaystyle ${getCorrectStepTex(p, p.errorStep)}$`;
+      c.appendChild(corr);
+    } else if (s === state.selectedStep) {
+      c.classList.add("reveal-wrong-pick");
+      const mk = document.createElement("div");
+      mk.className = "marker your";
+      mk.textContent = "你的选择";
+      c.appendChild(mk);
+    }
+  });
+
+  // Feedback banner
+  const panel = document.createElement("div");
+  if (got) {
+    panel.className = "feedback-panel reveal-correct";
+    panel.innerHTML = `
+      <span class="fb-tag">答对了</span>
+      <div class="fb-title">✓ 第 ${p.errorStep} 步是第一处出错</div>
+      <div class="fb-body">
+        <strong>错误类型：</strong>${et.label}<br>
+        ${et.hint}
+      </div>
+    `;
+  } else {
+    panel.className = "feedback-panel reveal-wrong";
+    panel.innerHTML = `
+      <span class="fb-tag">差一点</span>
+      <div class="fb-title">第一处出错是第 ${p.errorStep} 步（你选的是第 ${state.selectedStep} 步）</div>
+      <div class="fb-body">
+        <strong>错误类型：</strong>${et.label}<br>
+        ${et.hint}
+      </div>
+    `;
+  }
+  feedbackArea.innerHTML = "";
+  feedbackArea.appendChild(panel);
+
+  state.phase = "reveal";
+  actionBtn.textContent = "下一题 →";
+  actionBtn.classList.remove("primary", "accent");
+  actionBtn.classList.add("success");
+
+  typeset();
+
+  // Scroll error step into view after a beat
+  setTimeout(() => {
+    const errCard = document.querySelector(`.step-card[data-step="${p.errorStep}"]`);
+    if (errCard) errCard.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 250);
+}
+
+function getCorrectStepTex(p, step) {
+  // Rebuild correct steps for this problem
+  const c = buildCorrectSteps(p.A, p.B);
+  return [c.s1, c.s2, c.s3, c.s4, c.s5, c.s6][step - 1];
+}
+
+function updateScoreboard() {
+  document.getElementById("scoreCorrect").textContent = state.score.correct.toString();
+  document.getElementById("scoreTotal").textContent = state.score.total.toString();
+  document.getElementById("scoreStreak").textContent = state.score.streak.toString();
+}
+
+function typeset() {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    window.MathJax.typesetPromise().catch(() => {});
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ACTION BUTTON HANDLER
+═══════════════════════════════════════════════════════════════════ */
+
+actionBtn.addEventListener("click", () => {
+  if (state.phase === "select") {
+    if (state.selectedStep == null) return;
+    showHint();
+  } else if (state.phase === "hint") {
+    showReveal();
+  } else if (state.phase === "reveal") {
+    newProblem();
+  }
+});
+
+function newProblem() {
+  _retryCount = 0;
+  state.problem = buildProblem();
+  renderProblem();
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// Render immediately; MathJax will typeset when it's ready
+function bootstrap() {
+  newProblem();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrap);
+} else {
+  bootstrap();
+}
+
+// When MathJax finishes loading, typeset any pre-existing content
+if (window.MathJax) {
+  if (!window.MathJax.startup) {
+    window.MathJax = window.MathJax || {};
+    window.MathJax.startup = window.MathJax.startup || {};
+  }
+}
+// Polling fallback: once MathJax is ready, typeset
+(function awaitMathJax() {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    window.MathJax.typesetPromise().catch(() => {});
+  } else {
+    setTimeout(awaitMathJax, 200);
+  }
+})();
+
+</script>
+</body>
+</html>
